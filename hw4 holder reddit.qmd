@@ -1,0 +1,88 @@
+---
+title: "hw4"
+author: "Mary Holder"
+format: html
+editor: visual
+---
+
+```{r}
+library(RedditExtractoR)
+library(tidyverse)
+library(tidytext)
+library(geniusr)
+library(stopwords)
+```
+
+```{r}
+# top_spinning_urls <- find_thread_urls(subreddit="Handspinning", sort_by="top")
+# threads_contents <- get_thread_content(top_spinning_urls$url[1:40])
+# write_rds(threads_contents, "threads_contents.rds")
+# user <- get_user_content("Happy-coffeelady")
+# write_rds(user, "user.rds")
+```
+
+```{r}
+threads_contents <- read_rds("threads_contents.rds")
+user <- read_rds("user.rds")
+```
+
+```{r}
+# threads_contents <- get_thread_content(top_spinning_urls$url[1:40])
+threads <- threads_contents$threads
+
+stopwords <- data.frame(word = stopwords::stopwords("en"), stringsAsFactors = FALSE)
+```
+
+```{r}
+split_by_words <- unnest_tokens(threads, words, "text")
+all_words <- split_by_words %>% 
+  select(words)
+content_words <- all_words %>% 
+  anti_join(stop_words, join_by("words" == "word"))
+```
+
+```{r}
+sorted_content <- content_words %>% 
+  count(words, sort = TRUE)
+sorted_content %>% 
+  head(20) %>% 
+  ggplot(aes(n,fct_inorder(words))) +
+  scale_y_discrete(limits=rev)+
+  geom_col()+
+  xlab("Number") + ylab("Word")
+
+```
+
+4.   4. To practice working with lists, pull data on a specific user. It
+    can be yourself if you like! Do a word frequency analysis based on their
+    **comments**. 
+
+```{r}
+threads %>% 
+  filter(c(author) == "Happy-coffeelady")
+count_authors <- threads %>% 
+  group_by(author) %>% 
+  count(comments, sort = TRUE)
+```
+
+```{r}
+usertbl <- unnest_longer(user[["Happy-coffeelady"]][["comments"]], col = 1)
+hcl_comments <- usertbl$comment
+```
+
+```{r}
+hcl_split_by_words <- unnest_tokens(usertbl, words, "comment")
+hcl_all_words <- hcl_split_by_words %>% 
+  select(words)
+hcl_content_words <- hcl_all_words %>% 
+  anti_join(stop_words, join_by("words" == "word"))
+
+hcl_sorted_content <- hcl_content_words %>% 
+  count(words, sort = TRUE)
+hcl_sorted_content %>% 
+  head(20) %>% 
+  ggplot(aes(n,fct_inorder(words))) +
+  geom_col() +
+  scale_y_discrete(limits=rev)+
+  xlab("Number") + ylab("Word")
+```
